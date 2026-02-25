@@ -5,8 +5,8 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ImageCard } from './components/ImageCard';
 import { ProcessedImage, ProcessingConfig } from './types';
 import { fileToBase64, resizeAndCropImage } from './lib/utils';
-import { processProductImage, generateProductDescription } from './services/geminiService';
-import { Sparkles, Layers, Wand2, Zap, FileText } from 'lucide-react';
+import { processProductImage } from './services/geminiService';
+import { Sparkles, Layers, Wand2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const DEFAULT_CONFIG: ProcessingConfig = {
@@ -22,10 +22,6 @@ export default function App() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [config, setConfig] = useState<ProcessingConfig>(DEFAULT_CONFIG);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
-  
-  const isApiKeyMissing = !process.env.GEMINI_API_KEY || 
-                          process.env.GEMINI_API_KEY === "undefined" || 
-                          process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY";
 
   const handleFilesAdded = useCallback(async (files: File[]) => {
     const newImages: ProcessedImage[] = await Promise.all(
@@ -48,26 +44,15 @@ export default function App() {
 
     try {
       // 1. AI Background Removal & Generation
-      const aiProcessedPromise = processProductImage(
+      const aiProcessed = await processProductImage(
         image.originalUrl,
         'image/png',
         image.config.style
       );
 
-      // 2. AI Description Generation (Parallel)
-      const descriptionPromise = generateProductDescription(
-        image.originalUrl,
-        'image/png'
-      );
-
-      const [aiProcessed, description] = await Promise.all([
-        aiProcessedPromise,
-        descriptionPromise
-      ]);
-
       if (!aiProcessed) throw new Error('AI failed to process image');
 
-      // 3. Resizing & Enhancements
+      // 2. Resizing & Enhancements
       const [widthRatio, heightRatio] = image.config.aspectRatio.split(':').map(Number);
       const targetWidth = image.config.resolution;
       const targetHeight = Math.round((targetWidth / widthRatio) * heightRatio);
@@ -83,7 +68,7 @@ export default function App() {
       setImages((prev) =>
         prev.map((img) =>
           img.id === image.id
-            ? { ...img, status: 'completed', processedUrl: finalUrl, description: description || undefined }
+            ? { ...img, status: 'completed', processedUrl: finalUrl }
             : img
         )
       );
@@ -121,27 +106,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <Header />
-
-      {isApiKeyMissing && (
-        <div className="bg-amber-50 border-b border-amber-200 py-3 px-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-amber-800 text-sm font-medium">
-              <Zap className="w-4 h-4 fill-amber-500 text-amber-500" />
-              <span>
-                <strong>API Key Missing:</strong> Please add your <code>GEMINI_API_KEY</code> to your environment variables or Netlify settings to enable AI processing.
-              </span>
-            </div>
-            <a 
-              href="https://ai.google.dev/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-xs font-bold text-amber-900 underline hover:no-underline"
-            >
-              Get API Key →
-            </a>
-          </div>
-        </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -192,7 +156,7 @@ export default function App() {
                 </p>
                 <button
                   onClick={handleProcessAll}
-                  disabled={isProcessingAll || images.length === 0 || isApiKeyMissing}
+                  disabled={isProcessingAll || images.length === 0}
                   className="w-full bg-white text-indigo-600 py-3 rounded-2xl font-bold hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isProcessingAll ? (
@@ -279,7 +243,7 @@ export default function App() {
             <span className="text-sm font-bold tracking-tight text-zinc-900">PICS STUDiO</span>
           </div>
           <p className="text-zinc-400 text-xs">
-            Powered by Gemini AI • Professional E-commerce Tools • © 2026 PICS STUDiO by MD. Irfan
+            Powered by Gemini AI • Professional E-commerce Tools • © 2026 PICS STUDiO
           </p>
         </div>
       </footer>
