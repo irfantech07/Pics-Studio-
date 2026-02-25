@@ -5,10 +5,12 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAI() {
   if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment variables.");
+    const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    
+    if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
+      throw new Error("API Key Missing: Please set GEMINI_API_KEY in your environment variables or Netlify dashboard.");
     }
+    
     aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
@@ -72,5 +74,35 @@ export async function processProductImage(
   } catch (error) {
     console.error("Error processing image with Gemini:", error);
     throw error;
+  }
+}
+
+export async function generateProductDescription(
+  base64Image: string,
+  mimeType: string
+): Promise<string | null> {
+  try {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Image.split(',')[1],
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: "Write a short, professional, and catchy e-commerce product description for this item. Focus on its key features and benefits. Keep it under 50 words.",
+          },
+        ],
+      },
+    });
+
+    return response.text || null;
+  } catch (error) {
+    console.error("Error generating description with Gemini:", error);
+    return null; // Non-critical failure
   }
 }

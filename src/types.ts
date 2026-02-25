@@ -4,6 +4,7 @@ export interface ProcessedImage {
   id: string;
   originalUrl: string;
   processedUrl?: string;
+  description?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   error?: string;
   config: ProcessingConfig;

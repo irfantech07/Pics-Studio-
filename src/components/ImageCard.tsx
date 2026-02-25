@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, CheckCircle2, AlertCircle, Download, Trash2, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Download, Trash2, RefreshCw, FileText } from 'lucide-react';
 import { ProcessedImage } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,9 +25,9 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onRemove, onRetry }
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group relative bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-all"
+      className="group relative bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
     >
-      <div className="aspect-square relative bg-zinc-50">
+      <div className="aspect-square relative bg-zinc-50 shrink-0">
         <img
           src={image.processedUrl || image.originalUrl}
           alt="Product"
@@ -87,7 +87,19 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onRemove, onRetry }
         )}
       </div>
 
-      <div className="p-4 border-t border-zinc-100 flex items-center justify-between">
+      {image.status === 'completed' && image.description && (
+        <div className="p-4 bg-zinc-50/50 border-t border-zinc-100">
+          <div className="flex items-center gap-2 mb-2 text-zinc-900">
+            <FileText className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">AI Description</span>
+          </div>
+          <p className="text-xs text-zinc-600 leading-relaxed italic">
+            "{image.description}"
+          </p>
+        </div>
+      )}
+
+      <div className="p-4 border-t border-zinc-100 flex items-center justify-between mt-auto">
         <div className="flex items-center gap-2">
           {image.status === 'completed' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
