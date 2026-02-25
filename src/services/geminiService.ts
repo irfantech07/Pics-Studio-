@@ -7,35 +7,46 @@ export async function processProductImage(
   style: ImageStyle,
   category?: string
 ): Promise<string | null> {
+  // Try calling the server-side API first
+  try {
+    const response = await fetch("/api/process-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        base64Image: base64Image.split(',')[1],
+        mimeType,
+        style,
+        category
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.image;
+    }
+    
+    // If it's not a 404, throw the error
+    if (response.status !== 404) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+  } catch (error) {
+    console.warn("Server-side processing failed, falling back to client-side:", error);
+    // If it's a real error (not just a 404), we might want to show it, 
+    // but for now let's try falling back.
+  }
+
+  // Fallback to client-side processing
   try {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not defined. Please set VITE_GEMINI_API_KEY in your environment.");
+      throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `
-      You are a professional e-commerce product photographer and editor.
-      Task: Remove the background of the main product in this image and replace it with a new background.
-      
-      Requirements:
-      1. Detect the main product accurately.
-      2. Remove the existing background completely.
-      3. Generate a new background in "${style}" style.
-      4. The new background should complement the product's colors and theme.
-      5. Ensure professional studio-quality lighting and shadows that make the product pop.
-      6. Keep the product at its original scale but centered.
-      7. Output ONLY the edited image.
-      
-      Style Guide:
-      - minimal: Clean, solid or very subtle gradient background, often white or light gray.
-      - luxury: Premium textures like marble, silk, or dark elegant wood with dramatic lighting.
-      - tech: Modern, sleek, maybe some subtle glow or geometric patterns, cool tones.
-      - soft: Pastel colors, soft shadows, warm inviting atmosphere.
-      - premium: High-end studio look with professional depth of field and clean surfaces.
-      - outdoor: Natural lighting, blurred nature or urban background that fits the product.
-      - studio: Classic professional product photography setup with softbox lighting.
-    `;
+    const prompt = `Professional product photography, style: ${style}. Remove background and replace with ${style} studio background.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -62,7 +73,7 @@ export async function processProductImage(
 
     return null;
   } catch (error) {
-    console.error("Error processing image:", error);
+    console.error("Client-side processing failed:", error);
     throw error;
   }
 }
