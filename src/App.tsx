@@ -243,7 +243,7 @@ export default function App() {
             <span className="text-sm font-bold tracking-tight text-zinc-900">PICS STUDiO</span>
           </div>
           <p className="text-zinc-400 text-xs">
-            Powered by Gemini AI • Professional E-commerce Tools • © 2026 PICS STUDiO
+            Powered by Gemini AI • Professional E-commerce Tools • © 2026 PICS STUDiO by MD. Irfan
           </p>
         </div>
       </footer>
