@@ -1,7 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 import { ImageStyle } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export async function processProductImage(
   base64Image: string,
@@ -10,6 +21,7 @@ export async function processProductImage(
   category?: string
 ): Promise<string | null> {
   try {
+    const ai = getAI();
     const prompt = `
       You are a professional e-commerce product photographer and editor.
       Task: Remove the background of the main product in this image and replace it with a new background.
